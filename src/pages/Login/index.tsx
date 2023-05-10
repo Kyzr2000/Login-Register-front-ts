@@ -1,42 +1,49 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Checkbox, Form, Input } from "antd";
-import { useRecoilValue } from "recoil";
-import { userState } from "../../states/userState";
+
+import { gql, useQuery } from "@apollo/client";
 interface userInfo {
   username: string;
   password: string;
   remember: boolean;
 }
 interface User {
-  agreement: boolean;
   email: string;
   password: string;
-  confirm: string;
-  nickname: string;
-  prefix: string;
-  phone: string;
-  gender: string;
 }
+const USER_EMAIL = gql`
+  query GetUserByEmail($email: String!) {
+    getUserByEmail(email: $email) {
+      email
+      password
+    }
+  }
+`;
 const Login: React.FC = () => {
   document.title = "登录界面";
-  //读取recoil内数据
-  const list = useRecoilValue(userState);
+  const [user, setUser] = useState<User>({ email: "", password: "" });
+  const { data } = useQuery(USER_EMAIL, {
+    skip: !user.email,
+    variables: { email: user.email },
+  });
+
   //处理成功登录后的函数
   const onFinish = (values: userInfo) => {
-    let isExist: boolean = false;
-    let currentUser: User;
-    console.log("Success:", values);
-    list.forEach((item: User) => {
-      if (item.email === values.username && item.password === values.password) {
-        currentUser = item;
-        isExist = true;
+    console.log(data);
+    console.log(user);
+    if (data) {
+      //账号存在
+      const currUser = data.getUserByEmail;
+      if (
+        currUser.email === user.email &&
+        currUser.password === user.password
+      ) {
+        alert("登录成功！");
+      } else {
+        alert("登陆失败！");
       }
-    });
-
-    if (isExist) {
-      alert(`登陆成功！我的朋友:${currentUser!.nickname}`);
     } else {
-      alert("账号密码不对诶！");
+      alert("账号不存在！");
     }
   };
   //处理失败登录后的函数
@@ -62,7 +69,11 @@ const Login: React.FC = () => {
           name="username"
           rules={[{ required: true, message: "请输入你的账号!" }]}
         >
-          <Input />
+          <Input
+            onChange={(e) => {
+              setUser({ ...user, email: e.target.value });
+            }}
+          />
         </Form.Item>
 
         <Form.Item
@@ -70,7 +81,11 @@ const Login: React.FC = () => {
           name="password"
           rules={[{ required: true, message: "请输入你的密码!" }]}
         >
-          <Input.Password />
+          <Input.Password
+            onChange={(e) => {
+              setUser({ ...user, password: e.target.value });
+            }}
+          />
         </Form.Item>
 
         <Form.Item

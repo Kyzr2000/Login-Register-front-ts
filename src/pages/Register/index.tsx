@@ -1,7 +1,8 @@
 import { Button, Checkbox, Form, Input, Select } from "antd";
-import React from "react";
-import { useRecoilState } from "recoil";
-import { userState } from "../../states/userState";
+import React, { useEffect, useState } from "react";
+// import { useRecoilState } from "recoil";
+// import { userState } from "../../states/userState";
+import { useMutation, gql, useQuery } from "@apollo/client";
 
 const { Option } = Select;
 
@@ -28,29 +29,96 @@ const tailFormItemLayout = {
     },
   },
 };
+//接口限制user
+interface User {
+  agreement: boolean;
+  email: string;
+  password: string;
+  confirm: string;
+  nickname: string;
+  prefix: string;
+  phone: string;
+  gender: string;
+}
+//接口限制inputuser
+interface InputUser {
+  email: string;
+  password: string;
+  nickname: string;
+  phone: string;
+  gender: string;
+}
 
+//graphql定义插入语言
+const USERS = gql`
+  query {
+    getUsers {
+      id
+      email
+      password
+    }
+  }
+`;
+const ADD_USER = gql`
+  mutation AddUser($input: NewUserInput!) {
+    addUser(input: $input) {
+      email
+      password
+    }
+  }
+`;
+const USER_EMAIL = gql`
+  query GetUserByEmail($email: String!) {
+    getUserByEmail(email: $email) {
+      email
+      password
+    }
+  }
+`;
 const Register: React.FC = () => {
+  const [acc, setAcc] = useState<InputUser | null>();
+  const [email, setEmail] = useState<string | null>();
   //修改标题
   document.title = "注册界面";
   const [form] = Form.useForm();
-  //接口限制user
-  interface User {
-    agreement: boolean;
-    email: string;
-    password: string;
-    confirm: string;
-    nickname: string;
-    prefix: string;
-    phone: string;
-    gender: string;
-  }
-  //recoil存数据
-  const [list, setList] = useRecoilState(userState);
-  const onFinish = (values: User) => {
-    console.log("Received values of form: ", values);
-    const newList: any = [values, ...list];
-    setList(newList);
-    alert(`注册成功！我的朋友：${values.nickname}`);
+  const [add] = useMutation(ADD_USER);
+  const { data } = useQuery(USER_EMAIL, {
+    skip: !email,
+    variables: { email },
+  });
+  useEffect(() => {
+    if (acc) {
+      console.log("data", data);
+      console.log("emailstate", email);
+      console.log("acc", acc);
+      if (data) {
+        alert("该用户名被注册过了！");
+      } else {
+        add({
+          variables: {
+            input: {
+              email: acc.email,
+              password: acc.password,
+              nickname: acc.nickname,
+              phone: acc.phone,
+              gender: acc.gender,
+            },
+          },
+        });
+        alert("注册成功！");
+      }
+    }
+  }, [acc, data, email]);
+  const onFinish = async (values: User) => {
+    setEmail(values.email);
+    const input: InputUser = {
+      email: values.email,
+      password: values.password,
+      nickname: values.nickname,
+      phone: values.phone,
+      gender: values.gender,
+    };
+    setAcc(input);
   };
 
   const prefixSelector = (
