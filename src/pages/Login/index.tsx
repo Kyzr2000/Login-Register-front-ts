@@ -31,7 +31,7 @@ const Login: React.FC = () => {
   const onFinish = (values: userInfo) => {
     console.log(data);
     console.log(user);
-    if (data) {
+    if (data.getUserByEmail) {
       //账号存在
       const currUser = data.getUserByEmail;
       if (

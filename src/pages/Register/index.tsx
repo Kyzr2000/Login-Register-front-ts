@@ -1,7 +1,5 @@
 import { Button, Checkbox, Form, Input, Select } from "antd";
-import React, { useEffect, useState } from "react";
-// import { useRecoilState } from "recoil";
-// import { userState } from "../../states/userState";
+import React, { useState } from "react";
 import { useMutation, gql, useQuery } from "@apollo/client";
 
 const { Option } = Select;
@@ -50,18 +48,9 @@ interface InputUser {
 }
 
 //graphql定义插入语言
-const USERS = gql`
-  query {
-    getUsers {
-      id
-      email
-      password
-    }
-  }
-`;
 const ADD_USER = gql`
-  mutation AddUser($input: NewUserInput!) {
-    addUser(input: $input) {
+  mutation AddUser($createUserInput: CreateUserInput!) {
+    addUser(createUserInput: $createUserInput) {
       email
       password
     }
@@ -76,7 +65,6 @@ const USER_EMAIL = gql`
   }
 `;
 const Register: React.FC = () => {
-  const [acc, setAcc] = useState<InputUser | null>();
   const [email, setEmail] = useState<string | null>();
   //修改标题
   document.title = "注册界面";
@@ -86,39 +74,26 @@ const Register: React.FC = () => {
     skip: !email,
     variables: { email },
   });
-  useEffect(() => {
-    if (acc) {
-      console.log("data", data);
-      console.log("emailstate", email);
-      console.log("acc", acc);
-      if (data) {
-        alert("该用户名被注册过了！");
-      } else {
-        add({
-          variables: {
-            input: {
-              email: acc.email,
-              password: acc.password,
-              nickname: acc.nickname,
-              phone: acc.phone,
-              gender: acc.gender,
-            },
-          },
-        });
-        alert("注册成功！");
-      }
-    }
-  }, [acc, data, email]);
+
   const onFinish = async (values: User) => {
-    setEmail(values.email);
-    const input: InputUser = {
-      email: values.email,
-      password: values.password,
-      nickname: values.nickname,
-      phone: values.phone,
-      gender: values.gender,
-    };
-    setAcc(input);
+    console.log(data.getUserByEmail);
+    if (!data.getUserByEmail) {
+      add({
+        variables: {
+          createUserInput: {
+            email: values.email,
+            password: values.password,
+            nickname: values.nickname,
+            phone: values.phone,
+            gender: values.gender,
+          },
+        },
+      });
+      alert("注册成功！");
+      window.location.href = "/";
+    } else {
+      alert("该用户名被注册过了！");
+    }
   };
 
   const prefixSelector = (
@@ -158,7 +133,12 @@ const Register: React.FC = () => {
             },
           ]}
         >
-          <Input />
+          <Input
+            onChange={(e) => {
+              const email = e.target.value;
+              setEmail(email);
+            }}
+          />
         </Form.Item>
 
         <Form.Item
